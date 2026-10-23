@@ -1,0 +1,7 @@
+# Historical camera experiment; requires its original Python environment.
+tensorflow==1.15.5
+numpy
+scipy
+pyyaml
+opencv-python
+Pyqt5

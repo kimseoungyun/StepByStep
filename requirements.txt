@@ -1,14 +1,1 @@
-#Django
-Django
-djangorestframework
-django-cors-headers
-
-#posenet
-tensorflow==1.15.5
-numpy
-scipy
-pyyaml
-opencv-python
-
-#GUI
-Pyqt5
+Django>=5.2.8,<5.3
