@@ -16,7 +16,10 @@ let runId = 0, started = 0, lastMediaTime = -1, lastSample = -Infinity, animatio
 let pendingResolve, pendingReject, workerTimer;
 function status(text, error = false) { $('status').textContent = text; $('status').classList.toggle('error', error); }
 function buttons(locked = false) {
-  $('file').disabled = locked; $('camera').disabled = locked;
+  const connected = mode === 'camera' && !!stream;
+  $('file').disabled = locked; $('camera').disabled = locked && !connected;
+  $('camera').textContent = connected ? '카메라 해제' : '카메라 연결';
+  $('camera').setAttribute('aria-pressed', String(connected));
   $('start').disabled = locked || !mode; $('stop').disabled = !running;
 }
 function clearReport() {
@@ -76,11 +79,24 @@ $('file').addEventListener('change', async event => {
   finally { buttons(); event.target.value = ''; }
 });
 $('camera').addEventListener('click', async () => {
+  if (mode === 'camera' && stream) {
+    const wasRunning = running;
+    if (running) finish();
+    releaseSource(); buttons();
+    status(wasRunning ? '카메라를 해제했습니다. 종료 시점까지의 분석 결과를 아래에서 확인하세요.' : '카메라를 해제했습니다. 다시 연결하거나 영상을 선택해 주세요.');
+    return;
+  }
   releaseSource(); clearReport(); buttons(true);
+  $('camera').textContent = '연결 중…';
   try {
     if (!navigator.mediaDevices?.getUserMedia) throw new Error('카메라는 HTTPS 또는 localhost에서 지원되는 브라우저로 연결해 주세요.');
     stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
     video.srcObject = stream; await video.play(); await mediaReady(); mode = 'camera';
+    stream.getVideoTracks().forEach(track => track.addEventListener('ended', () => {
+      if (mode !== 'camera') return;
+      if (running) finish();
+      releaseSource(); buttons(); status('카메라 연결이 끊어졌습니다. 다시 연결해 주세요.', true);
+    }));
     $('placeholder').hidden = true; $('source').textContent = '카메라 미리보기 · 측정을 마치면 카메라가 꺼집니다.';
     status('전신이 화면에 들어오도록 준비한 뒤 분석 시작을 눌러 주세요.');
   } catch (e) { releaseSource(); status(`카메라를 연결하지 못했습니다. 권한과 연결 상태를 확인해 주세요. (${e.message})`, true); }
@@ -114,7 +130,7 @@ function finish(cancelled = false) {
   if (!running) return;
   running = false; runId++; cancelAnimationFrame(animation); video.pause(); killWorker();
   if (!cancelled) { renderReport(); status(report.usable ? '분석이 완료됐습니다. 아래에서 움직임 리포트를 확인해 주세요.' : '측정이 끝났지만 충분한 데이터가 없습니다. 아래 안내를 확인해 주세요.'); }
-  if (mode === 'camera') { stream?.getTracks().forEach(t => t.stop()); stream = null; video.srcObject = null; mode = null; }
+  if (mode === 'camera') releaseSource();
   buttons();
 }
 async function tick(id) {
