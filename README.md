@@ -5,6 +5,24 @@
 
 ## 실행
 
+Windows에서 기존 `.venv`의 서명되지 않은 Python이 애플리케이션 제어 정책에 차단되는 경우,
+정책을 변경하지 않고 설치된 정책 허용 Python을 사용할 수 있습니다. 이 PC에서는 유효한
+서명의 Codex 제공 Python으로 확인했습니다. 의존성은 프로젝트의 `.runtime-packages/`에 격리합니다.
+
+```powershell
+./scripts/run.ps1 -Setup
+# 이후 실행
+./scripts/run.ps1
+# 검사 및 테스트
+./scripts/run.ps1 -Action check
+./scripts/run.ps1 -Action test
+./scripts/run.ps1 -Action browser
+```
+
+기본 런타임이 없는 PC에서는 `-PythonPath <허용된 Python 3.12 실행파일 경로>`를 지정하세요.
+브라우저 테스트는 서버가 실행 중이고 Playwright Chromium이 설치되어 있어야 합니다.
+이 스크립트는 Windows 실행 정책이나 코드 무결성 설정을 변경하지 않습니다.
+
 Python 3.12 권장. Windows PowerShell에서 저장소 루트 기준:
 
 ```powershell
